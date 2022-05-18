@@ -1,68 +1,84 @@
+#include  <stdio.h>
+#include  <string.h>
+#include  <sys/types.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <stdlib.h>
 #include "shell.h"
 
-/* global variable for ^C handling */
-unsigned int sig_flag;
-
 /**
- * sig_handler - handles ^C signal interupt
- * @uuv: unused variable (required for signal function prototype)
+ * main - Entery poin
  *
- * Return: void
+ * Return: Always 0.
  */
-static void sig_handler(int uuv)
+int main(void)
 {
-	(void) uuv;
-	if (sig_flag == 0)
-		_puts("\n$ ");
-	else
-		_puts("\n");
-}
-
-/**
- * main - main function for the shell
- * @argc: number of arguments passed to main
- * @argv: array of arguments passed to main
- * @environment: array of environment variables
- *
- * Return: 0 or exit status, or ?
- */
-int main(int argc __attribute__((unused)), char **argv, char **environment)
-{
-	size_t len_buffer = 0;
-	unsigned int is_pipe = 0, i;
-	vars_t vars = {NULL, NULL, NULL, 0, NULL, 0, NULL};
-
-	vars.argv = argv;
-	vars.env = make_env(environment);
-	signal(SIGINT, sig_handler);
-	if (!isatty(STDIN_FILENO))
-		is_pipe = 1;
-	if (is_pipe == 0)
-		_puts("$ ");
-	sig_flag = 0;
-	while (getline(&(vars.buffer), &len_buffer, stdin) != -1)
+	char usrIn[1024];
+	char *params[20];
+	char *en[] = {NULL};
+	/*char *ar[] ={"ls",NULL};*/
+	while (1)
 	{
-		sig_flag = 1;
-		vars.count++;
-		vars.commands = tokenize(vars.buffer, ";");
-		for (i = 0; vars.commands && vars.commands[i] != NULL; i++)
+		printf("# ");
+		read_command(usrIn);
+		parseInput(usrIn, params);
+		if (fork() == 0)
 		{
-			vars.av = tokenize(vars.commands[i], "\n \t\r");
-			if (vars.av && vars.av[0])
-				if (check_for_builtins(&vars) == NULL)
-					check_for_path(&vars);
-			free(vars.av);
+			if (execve(params[0], params, en) == -1)
+			{
+				perror(params[0]);
+			}
 		}
-		free(vars.buffer);
-		free(vars.commands);
-		sig_flag = 0;
-		if (is_pipe == 0)
-			_puts("$ ");
-		vars.buffer = NULL;
+		else
+		{
+			wait(NULL);
+		}
+		if (strcmp(params[0], "exit\0") == 0)
+			exit(1);
+
 	}
-	if (is_pipe == 0)
-		_puts("\n");
-	free_env(vars.env);
-	free(vars.buffer);
-	exit(vars.status);
+
+	return (0);
+}
+/**
+ *read_command - reads input line from stdin
+ *@uin: array of chars from user input
+ */
+void read_command(char *uin)
+{
+	char *buff;
+	size_t bufsize = 1024;
+	int count = 0;
+
+	buff = malloc(bufsize * sizeof(char));
+	if (buff == NULL)
+	{
+		perror("Unable to allocate buffer");
+		exit(1);
+	}
+	count = getline(&buff, &bufsize, stdin);
+	if (count == 1)
+		return;
+	strcpy(uin, buff);
+	free(buff);
+}
+/**
+ *parseInput - parses user input into array of words
+ *@inpt: single line char array from user input
+ *@params: array of words
+ */
+void parseInput(char *inpt, char *params[])
+{
+	char *wrd;
+	char *inpt2;
+	int j = 0;
+
+	inpt2 = strdup(inpt);
+	wrd = strtok(inpt2, " \n");
+	while (wrd != NULL)
+	{
+		params[j++] = strdup(wrd);
+		wrd = strtok(NULL, " \n");
+	}
+	params[j] = NULL;
 }
