@@ -77,4 +77,8 @@ void print_error(vars_t *vars, char *msg);
 void _puts2(char *str);
 char *_uitoa(unsigned int count);
 
+/*a*/
+
+void read_command(char *uin);
+void parseInput(char *inpt, char *params[]);
 #endif /* _SHELL_H_ */
