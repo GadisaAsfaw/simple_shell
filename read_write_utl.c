@@ -28,3 +28,23 @@ void read_command(char *uin)
 	strcpy(uin, buff);
 	free(buff);
 }
+/**
+ *parseInput - parses user input into array of words
+ *@inpt: single line char array from user input
+ *@params: array of words
+ */
+void parseInput(char *inpt, char *params[])
+{
+	char *wrd;
+	char *inpt2;
+	int j = 0;
+
+	inpt2 = strdup(inpt);
+	wrd = strtok(inpt2, " \n");
+	while (wrd != NULL)
+	{
+		params[j++] = strdup(wrd);
+		wrd = strtok(NULL, " \n");
+	}
+	params[j] = NULL;
+}
